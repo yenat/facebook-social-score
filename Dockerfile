@@ -1,42 +1,22 @@
-pipeline {
-    agent any
-    environment {
-        DOCKER_IMAGE = 'facebook-scorer'
-    }
-    stages {
-        stage('Checkout') {
-            steps { 
-                git url: 'https://github.com/yenat/facebook-social-score.git', 
-                branch: 'main' 
-            }
-        }
-        stage('Build') {
-            steps { 
-                sh 'docker build -t ${DOCKER_IMAGE} .' 
-            }
-        }
-        stage('Deploy') {
-            environment {
-                FACEBOOK_EMAIL = credentials('facebook-email')
-                FACEBOOK_PASSWORD = credentials('facebook-password')
-            }
-            steps {
-                sh '''
-                docker run -d \
-                    --name ${DOCKER_IMAGE} \
-                    -p 7070:7070 \
-                    -e FACEBOOK_EMAIL=${FACEBOOK_EMAIL} \
-                    -e FACEBOOK_PASSWORD=${FACEBOOK_PASSWORD} \
-                    -v ${WORKSPACE}/cookies:/app \
-                    --restart unless-stopped \
-                    ${DOCKER_IMAGE}
-                '''
-            }
-        }
-    }
-    post {
-        always {
-            sh "docker logs ${DOCKER_IMAGE} --tail 50 || true"
-        }
-    }
-}
+FROM python:3.9-slim
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    gcc python3-dev libnss3 libnspr4 libatk1.0-0 \
+    libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 \
+    libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+    libgbm1 libasound2
+
+# Install Playwright
+RUN pip install playwright && \
+    playwright install chromium && \
+    playwright install-deps
+
+WORKDIR /app
+COPY . .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7070"]
