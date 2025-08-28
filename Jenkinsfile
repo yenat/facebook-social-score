@@ -17,12 +17,15 @@ pipeline {
             }
             steps {
                 sh '''
+                # Create cookies folder if not exists
+                mkdir -p ${WORKSPACE}/cookies
+
                 docker run -d \
                     --name ${DOCKER_IMAGE} \
                     -p 7070:7070 \
                     -e FACEBOOK_EMAIL=${FACEBOOK_EMAIL} \
                     -e FACEBOOK_PASSWORD=${FACEBOOK_PASSWORD} \
-                    -v ${WORKSPACE}/cookies:/app \
+                    -v ${WORKSPACE}/cookies:/app/cookies \
                     --restart unless-stopped \
                     ${DOCKER_IMAGE}
                 '''

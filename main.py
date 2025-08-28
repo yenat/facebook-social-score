@@ -45,7 +45,8 @@ DEFAULT_MAX_SCORE = 850
 MAX_RETRIES = 3
 REQUEST_TIMEOUT = 30000
 CALLBACK_TIMEOUT = 10
-COOKIE_PATH = Path("facebook_cookies.json")
+COOKIE_PATH = Path("cookies/facebook_cookies.json")  
+
 
 # Scoring weights
 WEIGHTS = {
