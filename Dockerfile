@@ -1,5 +1,5 @@
-# Use Microsoft Playwright Python base image
-FROM mcr.microsoft.com/playwright/python:v1.45.0-jammy
+# Use the newer Playwright Python base image
+FROM mcr.microsoft.com/playwright/python:v1.54.0-jammy
 
 # Environment variables to keep Python clean & predictable
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -10,7 +10,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Set working directory
 WORKDIR /app
 
-# Install Python dependencies first (for caching)
+# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
