@@ -20,6 +20,9 @@ pipeline {
                 # Create cookies folder if not exists
                 mkdir -p ${WORKSPACE}/cookies
 
+                # Stop and remove old container if exists
+                docker rm -f ${DOCKER_IMAGE} || true
+
                 docker run -d \
                     --name ${DOCKER_IMAGE} \
                     -p 7070:7070 \
