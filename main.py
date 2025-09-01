@@ -107,40 +107,12 @@ async def ensure_authenticated(page):
     cookies = await load_cookies()
     if cookies:
         await page.context.add_cookies(cookies)
-        await page.goto("https://facebook.com", timeout=15000)
+        await page.goto("https://facebook.com", timeout=30000)
         if "login" not in page.url.lower():
             return True
-
-    try:
-        await page.goto("https://facebook.com/login", timeout=15000)
-        await page.fill("#email", os.getenv("FACEBOOK_EMAIL"))
-        await page.fill("#pass", os.getenv("FACEBOOK_PASSWORD"))
-        await page.click("button[name='login']")  # safer than #loginbutton
-
-        try:
-            await page.wait_for_selector(
-                "a[aria-label='Home'], input[aria-label='Search Facebook']",
-                timeout=30000
-            )
-        except Exception as e:
-            await page.screenshot(path="/tmp/login_error.png")
-            with open("/tmp/login_error.html", "w", encoding="utf-8") as f:
-                f.write(await page.content())
-            logger.error(f"Login failed (couldn't detect home/search): {e}")
-            raise
-
-        # Double-check we’re not stuck on login page
-        if "login" in page.url.lower():
-            raise Exception("Still on login page, login failed")
-
-        await save_cookies(await page.context.cookies())
-        return True
-
-    except Exception as e:
-        logger.error(f"Login failed: {str(e)}")
-        return False
-
-
+        else:
+            raise HTTPException(503, "Saved cookies expired; refresh required")
+    raise HTTPException(503, "No cookies found; manual login required")
 
 async def fetch_profile(username: str) -> Optional[str]:
     async with async_playwright() as p:
