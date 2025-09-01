@@ -117,18 +117,29 @@ async def ensure_authenticated(page):
         await page.fill("#pass", os.getenv("FACEBOOK_PASSWORD"))
         await page.click("button[name='login']")  # safer than #loginbutton
 
-        # Option 1: wait for account menu (stable)
-        await page.wait_for_selector("[aria-label='Account']", timeout=20000)
+        try:
+            await page.wait_for_selector(
+                "a[aria-label='Home'], input[aria-label='Search Facebook']",
+                timeout=30000
+            )
+        except Exception as e:
+            await page.screenshot(path="/tmp/login_error.png")
+            with open("/tmp/login_error.html", "w", encoding="utf-8") as f:
+                f.write(await page.content())
+            logger.error(f"Login failed (couldn't detect home/search): {e}")
+            raise
 
-        # Option 2 (backup): check that we’re not on login anymore
+        # Double-check we’re not stuck on login page
         if "login" in page.url.lower():
             raise Exception("Still on login page, login failed")
 
         await save_cookies(await page.context.cookies())
         return True
+
     except Exception as e:
         logger.error(f"Login failed: {str(e)}")
         return False
+
 
 
 async def fetch_profile(username: str) -> Optional[str]:
