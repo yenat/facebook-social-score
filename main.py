@@ -107,21 +107,29 @@ async def ensure_authenticated(page):
     cookies = await load_cookies()
     if cookies:
         await page.context.add_cookies(cookies)
-        await page.goto("https://facebook.com", timeout=10000)
+        await page.goto("https://facebook.com", timeout=15000)
         if "login" not in page.url.lower():
             return True
-    
+
     try:
         await page.goto("https://facebook.com/login", timeout=15000)
         await page.fill("#email", os.getenv("FACEBOOK_EMAIL"))
         await page.fill("#pass", os.getenv("FACEBOOK_PASSWORD"))
-        await page.click("#loginbutton")
-        await page.wait_for_selector("input[placeholder='Search Facebook']", timeout=20000)
+        await page.click("button[name='login']")  # safer than #loginbutton
+
+        # Option 1: wait for account menu (stable)
+        await page.wait_for_selector("[aria-label='Account']", timeout=20000)
+
+        # Option 2 (backup): check that we’re not on login anymore
+        if "login" in page.url.lower():
+            raise Exception("Still on login page, login failed")
+
         await save_cookies(await page.context.cookies())
         return True
     except Exception as e:
         logger.error(f"Login failed: {str(e)}")
         return False
+
 
 async def fetch_profile(username: str) -> Optional[str]:
     async with async_playwright() as p:
@@ -269,7 +277,7 @@ def calculate_scores(profile_data: Dict) -> Dict:
         'tier': determine_tier(followers, profile_data['is_verified'])
     }
 
-@app.post("/central-score", response_model=CentralScoreResponse)
+@app.post("/facebook-score", response_model=CentralScoreResponse)
 async def central_score(request: CentralScoreRequest, background_tasks: BackgroundTasks = None):
     facebook_requests = []
     
