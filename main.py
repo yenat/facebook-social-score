@@ -98,10 +98,12 @@ async def load_cookies() -> List[Dict]:
 
 async def save_cookies(cookies: List[Dict]):
     try:
+        COOKIE_PATH.parent.mkdir(parents=True, exist_ok=True)  
         with open(COOKIE_PATH, 'w') as f:
             json.dump(cookies, f)
     except Exception as e:
         logger.error(f"Cookie save failed: {str(e)}")
+
 
 async def ensure_authenticated(page):
     cookies = await load_cookies()
