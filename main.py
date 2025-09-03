@@ -104,17 +104,24 @@ async def save_cookies(cookies: List[Dict]):
     except Exception as e:
         logger.error(f"Cookie save failed: {str(e)}")
 
-
 async def ensure_authenticated(page):
     cookies = await load_cookies()
-    if cookies:
-        await page.context.add_cookies(cookies)
-        await page.goto("https://facebook.com", timeout=30000)
-        if "login" not in page.url.lower():
-            return True
-        else:
-            raise HTTPException(503, "Saved cookies expired; refresh required")
-    raise HTTPException(503, "No cookies found; manual login required")
+    if not cookies:
+        raise HTTPException(503, "No cookies found; please bootstrap cookies manually")
+
+    # Try cookies
+    await page.context.add_cookies(cookies)
+    await page.goto("https://facebook.com", timeout=30000)
+
+    try:
+        await page.wait_for_selector(
+            "a[aria-label='Home'], input[aria-label='Search Facebook']",
+            timeout=10000
+        )
+        return True
+    except Exception:
+        raise HTTPException(503, "Saved cookies expired; re-bootstrap required")
+
 
 async def fetch_profile(username: str) -> Optional[str]:
     async with async_playwright() as p:
